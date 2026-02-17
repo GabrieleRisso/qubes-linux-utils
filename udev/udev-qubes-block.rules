@@ -8,10 +8,15 @@ ENV{UDISKS_IGNORE}=="1", GOTO="qubes_block_end"
 
 # Hide qubes-internal drives from udisks, so file selection dialogs
 ENV{MAJOR}=="7", ENV{UDISKS_IGNORE}="1"
+# Xen virtual block devices
 KERNEL=="xvda|xvdb|xvdc*|xvdd", ENV{UDISKS_IGNORE}="1"
+# KVM virtio block devices
+KERNEL=="vda|vdb|vdc*|vdd", ENV{UDISKS_IGNORE}="1"
 
 # Skip xen-blkfront devices
 ENV{MAJOR}=="202", GOTO="qubes_block_end"
+# Skip virtio-blk devices (major 252 or 253 depending on system)
+ATTR{partition}!="?*", DRIVERS=="virtio-pci", ENV{QUBES_INTERNAL_DISK}=="1", GOTO="qubes_block_end"
 
 # skip devices excluded elsewhere
 ENV{DM_UDEV_DISABLE_DISK_RULES_FLAG}=="1", ENV{QUBES_EXPORT_BLOCK_DEVICE}!="1", GOTO="qubes_block_end"
