@@ -1,3 +1,7 @@
+*.o
+*.o.dep
+*.so
+*.so.*
 imgconverter/build/
 not-script/not-script
 not-script/not-script.dep
