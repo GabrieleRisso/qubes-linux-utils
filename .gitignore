@@ -6,3 +6,4 @@ imgconverter/build/
 not-script/not-script
 not-script/not-script.dep
 qmemman/meminfo-writer
+qrexec-lib/unicode-generator
