@@ -8,8 +8,10 @@
 #
 # Ref: QubesOS/qubes-issues#7051
 
+QUBES_HOST_ARCH="$(uname -m)"
+
 detect_hypervisor() {
-    # Check for Xen first (most common for Qubes)
+    # Check for Xen first (most common for Qubes on x86)
     if [ -e /sys/hypervisor/type ]; then
         local hv_type
         hv_type=$(cat /sys/hypervisor/type 2>/dev/null)
@@ -19,7 +21,26 @@ detect_hypervisor() {
         fi
     fi
 
-    # Check for KVM via cpuid
+    # ARM64: Check device tree for hypervisor info
+    # KVM on ARM64 exposes hypervisor details via /sys/firmware/devicetree
+    if [ "$QUBES_HOST_ARCH" = "aarch64" ]; then
+        if [ -f /sys/firmware/devicetree/base/hypervisor/compatible ]; then
+            local dt_compat
+            dt_compat=$(cat /sys/firmware/devicetree/base/hypervisor/compatible 2>/dev/null | tr '\0' ' ')
+            case "$dt_compat" in
+                *kvm*)
+                    echo "kvm"
+                    return 0
+                    ;;
+                *xen*)
+                    echo "xen"
+                    return 0
+                    ;;
+            esac
+        fi
+    fi
+
+    # Check for KVM via DMI (may not exist on ARM64)
     if [ -e /sys/devices/virtual/dmi/id/sys_vendor ]; then
         local vendor
         vendor=$(cat /sys/devices/virtual/dmi/id/sys_vendor 2>/dev/null)
@@ -31,14 +52,14 @@ detect_hypervisor() {
         esac
     fi
 
-    # Check for KVM via hypervisor cpuid leaf
+    # Check for KVM via hypervisor cpuid leaf (x86 only)
     if [ -e /sys/hypervisor/type ] && \
        grep -q "KVM" /sys/hypervisor/type 2>/dev/null; then
         echo "kvm"
         return 0
     fi
 
-    # Check for virtio devices as a KVM indicator
+    # Check for virtio devices as a KVM indicator (works on all arches)
     if ls /sys/bus/virtio/devices/ >/dev/null 2>&1; then
         if [ -n "$(ls -A /sys/bus/virtio/devices/ 2>/dev/null)" ]; then
             echo "kvm"
@@ -49,6 +70,12 @@ detect_hypervisor() {
     # Check for Xen bus as fallback
     if [ -e /sys/bus/xen ]; then
         echo "xen"
+        return 0
+    fi
+
+    # Default: ARM64 defaults to kvm (no Xen), x86 returns unknown
+    if [ "$QUBES_HOST_ARCH" = "aarch64" ]; then
+        echo "kvm"
         return 0
     fi
 

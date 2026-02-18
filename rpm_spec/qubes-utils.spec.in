@@ -22,10 +22,12 @@ BuildRequires:  systemd
 BuildRequires:  python%{python3_pkgversion}-setuptools
 BuildRequires:  python3-rpm-macros
 # for meminfo-writer
+%if "x%{?backend_vmm}" != "xkvm"
 BuildRequires:  xen-devel
+%endif
 BuildRequires:	gcc
 BuildRequires:  selinux-policy-devel
-%if 0%{?is_opensuse}
+%if 0%{?is_opensuse} && "x%{?backend_vmm}" != "xkvm"
 # for directory ownership
 BuildRequires: xen-tools
 %endif
